@@ -1,0 +1,26 @@
+
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+    <title>{% block titulo%}{% endblock%}</title>
+  </head>
+  <body>
+  <nav>
+    <span>
+            <a href="{% url 'home' %}">Bienvenido a Django</a>
+      </span>
+<div class="menu">
+  <a href="{% url 'upload' %}">Sube tus imagenes</a>
+  <a href="{% url 'contacto' %}">Contactame</a>
+</div>
+
+
+  </nav>
+<img src="https://www.alvarodeleon.net/wp-content/uploads/2020/04/1587518750-b29af5b377f4ab627414ec7a5a4d3126.jpg" alt="Django">
+  <h2>La mejor web de la historia</h2>
+{% block contenido%}{% endblock%}
+  </body>
+</html>

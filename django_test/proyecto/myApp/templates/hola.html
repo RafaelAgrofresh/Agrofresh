@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block titulo %}Estamos aprendiendo Django{% endblock %}
+
+{% block contenido %}
+
+<h1>Bienvenido a Django</h1>
+
+<h2>Días de la semana</h2>
+
+<ul>
+    {% for lista in lista %}
+    <li>{{lista.articulo}} | {{lista.cantidad}}</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

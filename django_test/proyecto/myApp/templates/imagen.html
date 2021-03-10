@@ -1,0 +1,15 @@
+{%extends "base.html" %}
+
+{% block titulo%}Sube tu imagen{% endblock%}
+
+
+{% block contenido%}
+
+<h2>Sube tu imágen</h2>
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ imagen.as_p }}
+  <button type="submit">Subir </button>
+</form>
+
+{% endblock%}
