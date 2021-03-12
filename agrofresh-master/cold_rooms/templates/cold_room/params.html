@@ -1,0 +1,102 @@
+{% extends "layouts/base.html" %}
+{% load i18n static custom_tags %}
+{% blocktranslate asvar title with cold_room_name=cold_room.name %}Cold Room - {{ cold_room_name }} - Parameters{% endblocktranslate %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+{% static_link 'comms/css/table.css' %}
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="fade-in">
+        <div class="card">
+            <div class="card-header">
+                <i class="fa fa-cogs"></i>
+                <a href="{% url 'cold_room_detail' cold_room.id %}"
+                    class="btn btn-sm">
+                    {{ cold_room.name }} <small> {{ cold_room.description}} </small>
+                </a>
+                <span id="tag-filter"></span>
+            </div>
+            <div class="card-body">
+                <div id="errors"></div>
+                <input class="form-control" id="search" type="text" placeholder="Search...">
+                <table id="table" class="table table-sm"></table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+<script type="module">
+    import '/static/d3.v6.min.js';
+    import { Notifications } from "{% static 'js/notifications.js' %}";
+    import { extractTagSet, filterByTag, TagFilter } from "{% static 'comms/js/tags.js' %}";
+    import { Table } from "{% static 'comms/js/table.js' %}";
+    import { ws } from "{% static 'comms/js/wsockets.js' %}";
+    import { Writer } from "{% static 'comms/js/writer.js' %}";
+
+    const writer = new Writer("{% url 'comms:write' %}", "{{ csrf_token }}");
+    const writeHandler = writer.write.bind(writer);
+
+    // TODO DRY index.html
+    const fields = JSON.parse(document.getElementById('fields').textContent);
+    const paramFields = filterByTag(fields, 'basic');
+    const coldRoomId = +'{{ cold_room.id }}';
+    const tags = extractTagSet(paramFields).filter(
+        tag => !Object.values(paramFields).every(field => field.tags.includes(tag))
+    );
+    const tagFilter = new TagFilter(d3.select('#tag-filter'), tags, () => filterTableRows());
+    const notifications = new Notifications(d3.select('#errors'));
+    const table = new Table(d3.select('#table'), {
+        header: true,
+        columns: [
+            { id: "tags",        text: "{% trans 'tags' %}",        width: "20%", editable: false, visible: true },
+            { id: "property",    text: "{% trans 'property' %}",    width: "05%", editable: false, visible: false },
+            { id: "type",        text: "{% trans 'type' %}",        width: "05%", editable: false, visible: true },
+            { id: "addr",        text: "{% trans 'addr' %}",        width: "05%", editable: false, visible: true },
+            { id: "description", text: "{% trans 'description' %}", width: "40%", editable: false, visible: true },
+            // and value columns (1 per struct)
+        ],
+        writeHandler,
+    });
+
+    ws.subscribe(messageHandler);
+
+    function preProcessData(json) {
+        return {
+            ...json,
+            fields: paramFields,
+            structs: json.structs.filter(d => d.cold_room === coldRoomId)
+        };
+    }
+
+    function messageHandler(event) {
+        if (event.type !== "message") return;
+        const json = JSON.parse(event.data);
+        const data = preProcessData(json);
+        notifications.update(data);
+        table.update(data);
+    }
+
+    const searchInput = d3.select('#search')
+        .on("keyup", () => filterTableRows());
+
+    const filterTableRows = () => {
+        const filterByTag = tagFilter.predicate;
+        const textToSearch = searchInput.node().value.toLowerCase();
+        const match = d => d && d.toLowerCase().indexOf(textToSearch) >= 0;
+        const predicate = d => true
+            && filterByTag(d[0] || [])
+            // Search in d[1]:prop && d[3]:description
+            && (match(d[1]) || match(d[3]));
+
+        table.rowFilter = predicate;
+        table.applyRowFilter();
+    };
+</script>
+{% endblock %}

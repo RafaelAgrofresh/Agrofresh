@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:1.7.4-pg12
+    container_name: timescaledb
+    restart: always
+    ports:
+      - 5432:5432
+    networks:
+      - monitoring
+    volumes:
+      - timescaledb-volume:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=agrofresh
+      - TZ=Europe/Madrid
+
+  django:
+    image: agrofresh-app:latest
+    container_name: django
+    restart: always
+    ports:
+      - 8000:8000
+    networks:
+      - monitoring
+    environment:
+      - DB_HOST=timescaledb
+
+volumes:
+  timescaledb-volume:
+
+networks:
+  monitoring:

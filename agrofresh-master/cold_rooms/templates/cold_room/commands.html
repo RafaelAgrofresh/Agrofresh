@@ -1,0 +1,459 @@
+{% load i18n static %}
+
+<style>
+    .input-group-prepend .input-group-text { min-width:  110px; }
+    .input-group-append .input-group-text { min-width:  60px; }
+
+    @keyframes blink {
+        0% {filter: grayscale(100%);}
+        100% {filter: grayscale(0%);}
+    }
+
+    #applyChanges {
+        animation-name: blink;
+        animation-duration: 500ms;
+        animation-direction: alternate;
+        animation-iteration-count: infinite;
+    }
+
+    input.dirty {
+        color: #f1f9f4;
+        background-color: #d9534f;
+    }
+
+    .hidden {
+        display: none;
+    }
+</style>
+
+<div class="container">
+<form id="cmdForm" action="javascript:void(0);">
+    <button style="display: none;"></button>
+
+    <fieldset class="mb-3" name="onOffSystem">
+        <div class="input-group input-group-sm">
+            <div class="input-group-prepend">
+                <button class="btn btn-sm btn-secondary">{% trans "Paro/marcha cámara" %}</button>
+            </div>
+            <div class="input-group-append">
+                <span class="input-group-text mx-auto" style="display: block;">--</span>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="mb-3" name="ctrlOptions">
+        <legend class="h4">{% trans "Control options" %}</legend>
+        <div class="input-group input-group-sm mb-2" id="CO2CtrlOptions">
+            <div class="input-group-prepend">
+                <span class="input-group-text">{% trans "CO2" %}</span>
+            </div>
+            <select class="custom-select" name="CO2ControlSelection">
+                <option disabled selected hidden>--</option>
+                <option value="false">{% trans "Control by reference" %}</option>
+                <option value="true">{% trans "Proportional control" %}</option>
+            </select>
+        </div>
+
+        <div class="input-group input-group-sm mb-2" id="C2H4CtrlOptions">
+            <div class="input-group-prepend">
+                <span class="input-group-text">{% trans "C2H4" %}</span>
+            </div>
+            <select class="custom-select" name="C2H4ControlSelection">
+                <option disabled selected hidden>--</option>
+                <option value="false">{% trans "Gas balance control" %}</option>
+                <option value="true">{% trans "Proportional control" %}</option>
+            </select>
+        </div>
+        <fieldset name="cycleInit" style="display: inline;">
+            <div class="input-group input-group-sm">
+                <div class="input-group-prepend">
+                    <button class="btn btn-sm btn-secondary">{% trans "Inyección inicial" %}</button>
+                </div>
+                <div class="input-group-append">
+                    <span class="input-group-text mx-auto" style="display: block;">--</span>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset name="maintenanceInjection" style="display: inline;">
+            <div class="input-group input-group-sm">
+                <div class="input-group-prepend">
+                    <button class="btn btn-sm btn-secondary">{% trans "Ciclo de control de etileno" %}</button>
+                </div>
+                <div class="input-group-append">
+                    <span class="input-group-text mx-auto" style="display: block;">--</span>
+                </div>
+            </div>
+        </fieldset>
+    </fieldset>
+
+    <fieldset class="mb-3" name="modeOptions">
+        <legend>
+            <button class="btn btn-sm btn-outline-secondary" id="degreeningMode">{% trans "Degreening" %}</button>
+            <button class="btn btn-sm btn-outline-secondary" id="conservationMode">{% trans "Conservation" %}</button>
+        </legend>
+
+        <div class="form-row">
+            <div class="input-group input-group-sm mb-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "Temperature" %}</span>
+                </div>
+                <input type="number" class="form-control" name="refTemperature" placeholder="{% trans 'Temperature' %}">
+                <div class="input-group-append">
+                    <span class="input-group-text">ºC</span>
+                </div>
+             </div>
+
+            <div class="input-group input-group-sm mb-2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "Humidity" %}</span>
+                </div>
+                <input type="number" class="form-control" name="refHumidity" placeholder="{% trans 'Humidity' %}">
+                <div class="input-group-append">
+                    <span class="input-group-text">%HR</span>
+                </div>
+            </div>
+
+            <div class="input-group input-group-sm mb-2" id="lowRefCO2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "Low Ref. CO2" %}</span>
+                </div>
+                <input type="number" class="form-control" name="lowRefCO2" placeholder="{% trans 'Low reference CO2' %}">
+                <div class="input-group-append">
+                    <span class="input-group-text">ppm</span>
+                </div>
+            </div>
+
+            <div class="input-group input-group-sm mb-2" id="highRefCO2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "High Ref. CO2" %}</span>
+                </div>
+                <input type="number" class="form-control" name="highRefCO2" placeholder="{% trans 'High reference CO2' %}">
+                <div class="input-group-append">
+                    <span class="input-group-text">ppm</span>
+                </div>
+            </div>
+
+            <div class="input-group input-group-sm mb-2" id="refCO2">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "CO2" %}</span>
+                </div>
+                <input type="number" class="form-control" name="highRefCO2" placeholder="{% trans 'CO2' %}">
+                <div class="input-group-append">
+                    <span class="input-group-text">ppm</span>
+                </div>
+            </div>
+
+            <div class="input-group input-group-sm mb-2" id="refC2H4">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">{% trans "C2H4" %}</span>
+                </div>
+                <input type="number" class="form-control" name="refC2H4" placeholder="{% trans 'C2H4' %}" step="0.1" >
+                <div class="input-group-append">
+                    <span class="input-group-text">ppm</span>
+                </div>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-sm btn-danger" id="applyChanges" style="visibility: collapse;">{% trans "Apply" %}</button>
+    </fieldset>
+</form>
+</div>
+
+<script type="module">
+    import '/static/d3.v6.min.js';
+    import { ws } from "{% static 'comms/js/wsockets.js' %}";
+    import { confirmDialog, confirmDialogCustom } from "{% static 'js/modal.js' %}";
+    import { Writer } from "{% static 'comms/js/writer.js' %}";
+
+    const coldRoomId = +"{{ cold_room.id }}";
+    const writer = new Writer("{% url 'comms:write' %}", "{{ csrf_token }}");
+    const write = json => writer.write(coldRoomId, json);
+    const enableCO2ProportionalCtrl = JSON.parse("{{ cold_room.enable_CO2_proportional_ctrl|lower }}");
+    const enableC2H4ProportionalCtrl = JSON.parse("{{ cold_room.enable_C2H4_proportional_ctrl|lower }}");
+
+    ws.subscribe(wsMessageHandler);
+
+    function wsMessageHandler(event) {
+        // TODO duplicated code
+        if (event.type !== "message") return;
+        const json = { ...JSON.parse(event.data), fields };
+        const data = json.structs.filter(d => d.cold_room === coldRoomId)[0];
+        updateForm(data);
+    }
+
+    function updateForm(struct) {
+        const updateInput = (selection, struct) => {
+            selection.each((d, i, nodes) => {
+                const input = nodes[i];
+                const selection = d3.select(input);
+
+                if (selection.classed("not-stable")) {
+                    selection.classed("not-stable", false)
+                    return;
+                }
+
+                const value = struct[input.name];
+                const editing = input === document.activeElement;
+                if (!editing && !input.value) input.value = value;
+                selection.classed("dirty", value !== +input.value);
+            });
+        };
+        cmdForm.selectAll("input[name='refTemperature']").call(updateInput, struct);
+        cmdForm.selectAll("input[name='refHumidity']").call(updateInput, struct);
+        cmdForm.selectAll("input[name='highRefCO2']").call(updateInput, struct);
+        cmdForm.selectAll("input[name='lowRefCO2']").call(updateInput, struct);
+        cmdForm.selectAll("input[name='refC2H4']").call(updateInput, struct);
+
+        cmdForm.selectAll("input").on('keydown', function (event) {
+            if (event.code !== "Enter") return;
+            event.preventDefault();
+
+            // Focus next
+            const elements = Array.from(cmdForm.node().elements)
+                .filter(x => $(x).is(':visible'));
+
+            const index = elements.indexOf(event.target);
+            const next = elements[(index + 1) % elements.length];
+            event.target.blur();
+            next.focus();
+        });
+
+        const updateSelect = (select, struct) => {
+            if (select.classed("not-stable")) {
+                select.classed("not-stable", false)
+                return;
+            }
+
+            const name = select.attr('name');
+            select.node().value = struct[name];
+        };
+
+        const visibilityFn = visible => visible ? "flex": "none";
+        cmdForm.select("#CO2CtrlOptions").style("display", visibilityFn(enableCO2ProportionalCtrl))
+        cmdForm.select("#C2H4CtrlOptions").style("display", visibilityFn(enableC2H4ProportionalCtrl))
+
+        CO2CtrlModeSelector
+            .property("disabled", !enableCO2ProportionalCtrl)
+            .call(updateSelect, struct)
+            .on("change", event  => {
+                setCO2CtrlMode(event.target.value);
+                d3.select(event.target).classed("not-stable", true);
+            });
+
+        C2H4CtrlModeSelector
+            .property("disabled", !enableC2H4ProportionalCtrl)
+            .call(updateSelect, struct)
+            .on("change", event => {
+                setC2H4CtrlMode(event.target.value);
+                d3.select(event.target).classed("not-stable", true);
+            });
+
+        const conservation = !!struct.workingMode;
+        const degreening   = !conservation;
+
+        degreeningModeButton
+            .classed("btn-warning", degreening)
+            .classed("btn-outline-secondary", !degreening)
+            .on("click", event =>  confirmDialog(
+                "{% trans 'Confirmar' %}",
+                "{% trans '¿Pasar a desrvedización?' %}",
+                "{% trans 'Yes' %}", "{% trans 'No' %}", ok => {
+                    if (!ok) return;
+                    setWorkingMode(false);
+                }));
+
+        conservationModeButton
+            .classed("btn-primary", conservation)
+            .classed("btn-outline-secondary", !conservation)
+            .on("click", event =>  confirmDialog(
+                "{% trans 'Confirmar' %}",
+                "{% trans '¿Pasar a conservación?' %}",
+                "{% trans 'Yes' %}", "{% trans 'No' %}", ok => {
+                    if (!ok) return;
+                    setWorkingMode(true);
+                }));
+
+        const onOffLabelText = d => d
+            ? "{% trans 'On'|upper %}"
+            : "{% trans 'Off'|upper %}";
+
+        onOffSystem.call(btn => {
+            btn.select("span").text(onOffLabelText(struct.onOffSystem));
+            btn.select("button")
+                .classed("btn-success", struct.onOffSystem)
+                .classed("btn-secondary", !struct.onOffSystem)
+                .on("click", event => {
+                    const button  = d3.select(event.target);
+                    const checked = !button.classed("btn-success");
+                    confirmDialog(
+                        "{% trans 'Confirmar' %}",
+                        checked
+                            ? "{% trans '¿Poner en marcha cámara?' %}"
+                            : "{% trans '¿Parar cámara?' %}",
+                        "{% trans 'Yes' %}", "{% trans 'No' %}", ok => {
+                            if (!ok) return;
+                            write({ onOffSystem: checked });
+                    });
+                });
+        })
+
+        cycleInit.call(btn => {
+            btn.select("span").text(onOffLabelText(struct.start1));
+            btn.select("button")
+                .classed("btn-dark", struct.start1)
+                .classed("btn-secondary", !struct.start1)
+                .on("click", event => {
+                    const button  = d3.select(event.target);
+                    const checked = !button.classed("btn-dark");
+
+                    if (checked) {
+                        confirmDialogCustom(
+                            "{% trans 'Confirmar' %}",
+                            "{% trans '¿Iniciar inyección de etileno?' %}",
+                            "{% trans 'Yes' %}", "{% trans 'No' %}", "{% trans 'Complete cycle' %}",
+                            result => {
+                                if (result === "custom") {
+                                    write({ start1: true, start2: true, finalInjectionMessageActivated: false });
+                                    return;
+                                }
+
+                                if (result === "yes") {
+                                    write({ start1: true, start2: false, finalInjectionMessageActivated: false });
+                                    return;
+                                }
+
+                                if (result === "no") {
+                                    write({ start1: false });
+                                    return;
+                                }
+                        });
+                    } else {
+                        confirmDialog(
+                            "{% trans 'Confirmar' %}",
+                            "{% trans '¿Finalizar inyección de etileno?' %}",
+                            "{% trans 'Yes' %}", "{% trans 'No' %}", ok => {
+                                if (!ok) return;
+                                write({ start1: false, start2: false });
+                            });
+                    }
+                });
+        });
+
+        maintenanceInjection.call(btn => {
+            btn.select("span").text(onOffLabelText(struct.start2));
+            btn.select("button")
+                .classed("btn-dark", struct.start2)
+                .classed("btn-secondary", !struct.start2)
+                .on("click", event => {
+                    const button  = d3.select(event.target);
+                    const checked = !button.classed("btn-dark");
+
+                    if (checked) {
+                        confirmDialog(
+                            "{% trans 'Confirmar' %}",
+                            // "{% trans '¿Iniciar inyección de etileno?' %}",
+                            "{% trans '¿Iniciar control por balance de gases?' %}",
+                            "{% trans 'Yes' %}", "{% trans 'No' %}",
+                            result => {
+                                if (result === "yes") {
+                                    write({ start1: false, start2: true });
+                                    return;
+                                }
+
+                                if (result === "no") {
+                                    write({ start2: false });
+                                    return;
+                                }
+                        });
+                    } else {
+                        confirmDialog(
+                            "{% trans 'Confirmar' %}",
+                            // "{% trans '¿Finalizar inyección de etileno?' %}",
+                            "{% trans '¿Finalizar control por balance de gases?' %}",
+                            "{% trans 'Yes' %}", "{% trans 'No' %}", ok => {
+                                if (!ok) return;
+                                write({ start2: false });
+                            });
+                    }
+                });
+        });
+
+        applyChangesButton
+            .call(visibility, _ => formHasDirtyFields(modeOptions.node().elements))
+            .on("click", event => write(formToJSON(modeOptions.node().elements)));
+
+        updateCtrlMode();
+    }
+
+    const cmdForm = d3.select("#cmdForm");
+    const onOffSystem = d3.select("fieldset[name='onOffSystem']");
+    const ctrlOptions = d3.select("fieldset[name='ctrlOptions']");
+    const modeOptions = d3.select("fieldset[name='modeOptions']");
+    const cycleInit = d3.select("fieldset[name='cycleInit']");
+    const maintenanceInjection = d3.select("fieldset[name='maintenanceInjection']");
+    const degreeningModeButton = modeOptions.select("#degreeningMode");
+    const conservationModeButton = modeOptions.select("#conservationMode");
+    const applyChangesButton = modeOptions.select("#applyChanges");
+    const CO2CtrlModeSelector = d3.select('select[name="CO2ControlSelection"]');
+    const C2H4CtrlModeSelector = d3.select('select[name="C2H4ControlSelection"]');
+
+    const setWorkingMode = async value => {;
+        const result = await d3.json("{% url 'comms:set_working_mode' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}" },
+            body: JSON.stringify({ cold_room: coldRoomId, value })
+        });
+        const { data } = result;
+        console.log(`cold_room[pk=${data.cold_room}].workingMode=${data.value}`);
+
+        d3.selectAll('input[type=number]')
+            .classed("not-stable", true)
+            .property("value", "");
+    };
+
+    const visibility = (selection, predicate) => selection
+        .style("visibility", d => predicate(d) ? "visible" : "collapse")
+        .classed("hidden", d => !predicate(d));
+
+    const updateCtrlMode = () => {
+        const degreeningMode = degreeningModeButton.classed("btn-warning");
+        const showCO2Range = CO2CtrlModeSelector.node().value === "false";
+        const gasBalanceMode = C2H4CtrlModeSelector.node().value === "false";
+        const showC2H4 = !gasBalanceMode && degreeningMode;
+
+        d3.selectAll('#lowRefCO2, #highRefCO2').call(visibility, _ => showCO2Range)
+        d3.selectAll('#refCO2').call(visibility, _ => !showCO2Range)
+        d3.selectAll('#refC2H4').call(visibility, _ => showC2H4)
+        cycleInit.call(visibility, _ => gasBalanceMode);
+        maintenanceInjection.call(visibility, _ => gasBalanceMode);
+    };
+
+    const setCO2CtrlMode = mode => {
+        mode = enableCO2ProportionalCtrl && JSON.parse(mode);
+        console.log(`Setting CO2 control mode to '${mode}:${mode ? "proportional" : "reference"}'`);
+        write({ CO2ControlSelection: mode });
+        updateCtrlMode();
+    };
+
+    const setC2H4CtrlMode = mode => {
+        mode = enableC2H4ProportionalCtrl && JSON.parse(mode);
+        console.log(`Setting C2H4 control mode to '${mode}:${mode ? "proportional" : "balance"}'`);
+        write({ C2H4ControlSelection: mode, start1: 0, start1: 0 });
+        updateCtrlMode();
+    };
+
+    const fmtValue = element => element.type === "number" ? +element.value : element.value;
+
+    const formHasDirtyFields = elements => [].slice.call(elements) // from HTMLCollection to Array
+        .filter(element => element.name)
+        .filter(e => d3.select(e).style('visibility') == "visible")
+        .some(e => d3.select(e).classed("dirty"))
+
+    const formToJSON = elements => Object.fromEntries(
+        [].slice.call(elements) // from HTMLCollection to Array
+            .filter(element => element.name)
+            .filter(e => d3.select(e).style('visibility') == "visible")
+            .map(element => [element.name, fmtValue(element)])
+    );
+</script>

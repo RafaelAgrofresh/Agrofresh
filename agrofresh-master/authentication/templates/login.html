@@ -1,0 +1,87 @@
+{% extends "layouts/base-fullscreen.html" %}
+{% load i18n %}
+{% trans "Login" as title %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card-group">
+      <div class="card p-4">
+        <div class="card-body">
+          <h2 class="text-center">
+            <a target="_blank" class="text-white" href="https://www.agrofresh.com/technologies/control-tec/">
+              <img src="/static/assets/img/ControlTec_Logo_claim_RGB.png" width="100%">
+            </a>
+          </h2>
+          <h1>{% trans "Login" %}</h1>
+          <p class="text-muted">
+            {% if msg %}
+            {{ msg | safe }}
+            {% else %}
+            {% trans "Use your credentials or register new account" %}
+            {% endif %}
+          </p>
+
+          <form role="form" method="post" action="">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                  </svg></span></div>
+              {{ form.username }}
+            </div>
+
+            <div class="input-group mb-4">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                  </svg></span></div>
+              {{ form.password }}
+            </div>
+
+            <div class="row">
+              <div class="col-6">
+                <button type="submit" name="login" class="btn btn-primary px-4">
+                  {% trans "Login" %}
+                </button>
+              </div>
+              <div class="col-6 text-right">
+                <a href="{% url 'register' %}" class="btn btn-link px-0 disabled">
+                  {% trans "Register" %}
+                </a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card py-5 d-md-down-none" style="width:50%">
+        <div class="card-body text-center">
+          <div>
+            <h2>
+              <a target="_blank" class="text-white" href="https://agrofresh.com">
+                <img src="/static/assets/img/AgroFresh_Logo_Color.png" width="60%" class="mb-4">
+              </a>
+
+              <a target="_blank" class="text-white" href="http://www.greenmed.es/">
+                <img src="/static/assets/img/greenmed.png" width="60%">
+              </a>
+            </h2>
+            <br />
+            <p>
+              {% trans "Cold Storage System | Agrofresh" %}
+            </p>
+            <p>
+              &copy; <a target="_blank" href="https://agrofresh.com/">Agrofresh</a>
+              <!-- - coded by <a class="text-white" target="_blank" href="https://instamedingenieros.com">Instamed
+                Ingenieros</a>. -->
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

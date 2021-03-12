@@ -1,0 +1,74 @@
+[
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 1,
+        "fields": {
+            "name": "Cámara 1",
+            "description": "Descripción cámara 1",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 1,
+            "address": 0
+        }
+    },
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 2,
+        "fields": {
+            "name": "Cámara 2",
+            "description": "Descripción cámara 2",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 2,
+            "address": 0
+        }
+    },
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 3,
+        "fields": {
+            "name": "Cámara 3",
+            "description": "Descripción cámara 3",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 3,
+            "address": 0
+        }
+    },
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 4,
+        "fields": {
+            "name": "Cámara 4",
+            "description": "Descripción cámara 4",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 4,
+            "address": 0
+        }
+    },
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 5,
+        "fields": {
+            "name": "Cámara 5",
+            "description": "Descripción cámara 5",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 5,
+            "address": 0
+        }
+    },
+    {
+        "model": "cold_rooms.coldroom",
+        "pk": 6,
+        "fields": {
+            "name": "Cámara 6",
+            "description": "Descripción cámara 6",
+            "host": "127.0.0.1",
+            "port": 502,
+            "unit": 6,
+            "address": 0
+        }
+    }
+]

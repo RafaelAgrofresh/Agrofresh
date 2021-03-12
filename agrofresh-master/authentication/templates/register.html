@@ -1,0 +1,73 @@
+{% extends "layouts/base-fullscreen.html" %}
+{% load i18n %}
+{% trans "Register" as title %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card-group">
+      <div class="card p-4">
+        <div class="card-body">
+          <h1>Register</h1>
+          <p class="text-muted">
+            {% if msg %}
+            {{ msg | safe }}
+            {% else %}
+            {% trans 'Create your account' %}
+            {% endif %}
+          </p>
+
+          <form role="form" method="post" action="">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                  </svg></span></div>
+              {{ form.username }}
+            </div>
+            <span class="text-error">{{ form.username.errors }}</span>
+
+            <div class="input-group mb-3">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-envelope-open"></use>
+                  </svg></span></div>
+              {{ form.email }}
+            </div>
+            <span class="text-error">{{ form.email.errors }}</span>
+
+            <div class="input-group mb-4">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                  </svg></span></div>
+              {{ form.password1 }}
+            </div>
+            <span class="text-error">{{ form.password1.errors }}</span>
+
+            <div class="input-group mb-4">
+              <div class="input-group-prepend"><span class="input-group-text">
+                  <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-lock-locked"></use>
+                  </svg></span></div>
+              {{ form.password2 }}
+            </div>
+            <span class="text-error">{{ form.password2.errors }}</span>
+
+            <div class="row">
+              <div class="col-6">
+                <button type="submit" name="register" class="btn btn-primary px-4">{% trans "Register" %}</button>
+              </div>
+              <div class="col-6 text-right">
+                <a href="{% url 'login' %}" class="btn btn-link px-0">{% trans "Login" %}</a>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

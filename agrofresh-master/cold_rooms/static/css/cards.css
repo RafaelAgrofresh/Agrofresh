@@ -1,0 +1,95 @@
+.btn-command{
+    border: 1px solid transparent;
+}
+
+.btn-command:hover{
+    border: 1px solid #d0d0d0;
+    cursor: pointer;
+    padding: 1;
+}
+
+.btn-command i {
+    height: 24px;
+    width: 24px;
+    text-align: center;
+}
+
+.measurement,
+.chart-active {
+    margin: 0px;
+    padding: 2px;
+    background: transparent;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.measurement:hover {
+    border: 1px solid #d0d0d0;
+    cursor: pointer;
+}
+
+.chart-active:after {
+    content: '';
+    background: url('/static/assets/icons/cold_rooms/linechart.png');
+    filter: brightness(0) invert(1);
+    background-size: cover;
+    position: absolute;
+    margin-top: 10px;
+    margin-left: 5px;
+    width: 28px;
+    height: 16px;
+    display: inline-block;
+}
+
+.c-chart-wrapper {
+    height:70px;
+}
+
+img {
+    filter: brightness(0) invert(1);
+}
+
+.state-icons img {
+    height: 16px;
+    width: 16px;
+}
+
+.state-workmode {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.measurement {
+    font-size: 0.8rem;
+}
+
+.measurement img {
+    vertical-align: -0.2rem;
+    height: 24px;
+    width: 24px;
+}
+
+.measurement span {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.hidden {
+    display: none;
+}
+
+.loading {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    border-radius: .25rem;
+    align-items: center;
+    background-color: rgba(255, 255, 255, .7);
+    display: flex;
+    justify-content: center;
+    z-index: 50;
+}

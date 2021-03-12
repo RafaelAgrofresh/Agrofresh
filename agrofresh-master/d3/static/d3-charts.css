@@ -1,0 +1,54 @@
+.chart-container {
+    position: relative;
+}
+
+canvas {
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+}
+
+svg text {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+svg.chart {
+    display: block;
+    margin:0 auto;
+}
+
+svg.chart .interaction-rect {
+    fill: none;
+    pointer-events: all;
+}
+
+svg.chart .cursor-rule {
+    stroke: slategray;
+    pointer-events: none;
+}
+
+.serie-tooltip * {
+    pointer-events: none;
+}
+
+.serie-tooltip text {
+    /* text-shadow: 2px 2px 4px white; */
+    filter: drop-shadow(0 0 2px white);
+}
+
+svg.chart .line-path {
+    fill: none;
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    mix-blend-mode: multiply;
+}
+
+.domain,
+.tick line {
+    stroke: lightslategray;
+    stroke-width: 0.5px;
+}

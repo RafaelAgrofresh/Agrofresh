@@ -1,0 +1,104 @@
+{% extends "layouts/base.html" %}
+{% load i18n static custom_tags %}
+{% trans "Comms view" as title %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+{% static_link 'comms/css/table.css' %}
+{% endblock stylesheets %}
+
+{% block content %}
+{% if not cold_rooms %}
+<div class="row m-2">{% trans 'no cold rooms defined' %}</div>
+{% else %}
+<div class="container-fluid">
+    <div class="fade-in">
+        <div class="card">
+            <div class="card-header">
+                {% if perms.comms.can_export_memory_map %}
+                <a class="fa fa-microchip" href="{% url 'comms:mmap_header' %}"
+                    title="{% trans 'Download mmap C header file' %}"
+                    target="_blank"></a>
+                <a class="fa fa-download" href="{% url 'comms:mmap' %}"
+                    title="{% trans 'Download mmap CSV' %}"
+                    target="_blank"></a>
+                {% endif %}
+                {{ title }}
+                <span id="tag-filter"></span>
+            </div>
+            <div class="card-body">
+                <div id="errors"></div>
+                <input class="form-control" id="search" type="text" placeholder="Search...">
+                <table id="table" class="table table-sm"></table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+{% if cold_rooms %}
+<script type="module">
+    import '/static/d3.v6.min.js';
+    import { Notifications } from "{% static 'js/notifications.js' %}";
+    import { extractTagSet, TagFilter } from "{% static 'comms/js/tags.js' %}";
+    import { Table } from "{% static 'comms/js/table.js' %}";
+    import { ws } from "{% static 'comms/js/wsockets.js' %}";
+    import { Writer } from "{% static 'comms/js/writer.js' %}";
+
+    const writer = new Writer("{% url 'comms:write' %}", "{{ csrf_token }}");
+    const writeHandler = writer.write.bind(writer);
+
+    // TODO DRY params.html
+    const fields = JSON.parse(document.getElementById('fields').textContent);
+    const tags = extractTagSet(fields);
+    const tagFilter = new TagFilter(d3.select('#tag-filter'), tags, () => filterTableRows());
+    const notifications = new Notifications(d3.select('#errors'));
+    const table = new Table(d3.select('#table'), {
+        header: true,
+        columns: [
+            { id: "tags",        text: "{% trans 'tags' %}",        width: "20%", editable: false, visible: true },
+            { id: "property",    text: "{% trans 'property' %}",    width: "05%", editable: false, visible: true },
+            { id: "type",        text: "{% trans 'type' %}",        width: "05%", editable: false, visible: true },
+            { id: "addr",        text: "{% trans 'addr' %}",        width: "05%", editable: false, visible: true },
+            { id: "description", text: "{% trans 'description' %}", width: "35%", editable: false, visible: true },
+            // and value columns (1 per struct)
+        ],
+        writeHandler,
+    });
+
+    ws.subscribe(messageHandler);
+
+    function preProcessData(json) {
+        return { ...json, fields };
+    }
+
+    function messageHandler(event) {
+        if (event.type !== "message") return;
+        const json = JSON.parse(event.data);
+        const data = preProcessData(json);
+        notifications.update(data);
+        table.update(data);
+    }
+
+    const searchInput = d3.select('#search')
+        .on("keyup", () => filterTableRows());
+
+    const filterTableRows = () => {
+        const filterByTag = tagFilter.predicate;
+        const textToSearch = searchInput.node().value.toLowerCase();
+        const match = d => d && d.toLowerCase().indexOf(textToSearch) >= 0;
+        const predicate = d => true
+            && filterByTag(d[0] || [])
+            // Search in d[1]:prop && d[3]:description
+            && (match(d[1]) || match(d[3]));
+
+        table.rowFilter = predicate;
+        table.applyRowFilter();
+    };
+</script>
+{% endif %}
+{% endblock %}

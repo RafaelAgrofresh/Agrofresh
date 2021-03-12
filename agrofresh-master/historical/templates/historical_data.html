@@ -1,0 +1,85 @@
+{% extends "layouts/base.html" %}
+{% load i18n static custom_tags crispy_forms_tags %}
+<!-- {% trans "Cold Rooms - Historical Data" as title %} -->
+{% block title %}{{ title }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+    .loading {
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+        border-radius: .25rem;
+        align-items: center;
+        background-color: rgba(255, 255, 255, .7);
+        display: flex;
+        justify-content: center;
+        z-index: 50;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="fade-in">
+        <div class="card">
+            <div class="card-header">
+                <a class="btn fa fa-download float-right" href="{% url 'historical:data_csv' %}"
+                    title="{% trans 'Download CSV' %}"
+                    target="_blank"></a>
+                <a class="btn" data-toggle="collapse" data-target="#optionToggler"
+                    aria-controls="optionToggler" aria-expanded="false" aria-label="Toggle filter options">
+                    <i class="fa fa-filter"></i>
+                    {% trans "Filter options" %}
+                </a>
+                <div class="collapse" id="optionToggler">
+                    {% crispy form %}
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="loading">
+                    <i class="fa fa-cog fa-spin fa-4x"></i>
+                </div>
+                <div id="plot-div"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block javascripts %}
+{{ block.super }}
+{% static_script 'assets/js/plotly.min.js' %}
+<script type="module">
+    import '/static/d3.v6.min.js';
+    const plot = document.getElementById("plot-div");
+
+    const setLoading = value => d3.selectAll(".loading")
+        .style("visibility", value ? "visible": "hidden");
+
+    d3.json("{{ data_src }}" + document.location.search)
+        .then(({ data, layout, config }) => ({
+            data,
+            layout: {
+                ...layout,
+                title: { text: "{{ title }}" || layout.title.text },
+            },
+            config: {
+                ...config,
+                displaylogo: false,
+            }
+        }))
+        // .then(json => { console.log(json); return json; })
+        .then(json => Plotly.react(plot, json))
+        .catch(e => alert(e))
+        .finally(_ => {
+            setLoading(false);
+            // ugly hack
+            $('.selector-chosen select').removeAttr("style");
+        });
+</script>
+{% endblock javascripts %}

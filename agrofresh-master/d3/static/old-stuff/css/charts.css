@@ -1,0 +1,25 @@
+svg text {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+svg.chart {
+    display:block;
+    margin:0 auto;
+}
+
+.line-path {
+    fill: none;
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    mix-blend-mode: multiply;
+}
+
+.domain,
+.tick line {
+    stroke: lightslategray;
+    stroke-width: 0.5px;
+}

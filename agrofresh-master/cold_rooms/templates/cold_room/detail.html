@@ -1,0 +1,253 @@
+{% extends "layouts/base.html" %}
+{% load i18n static custom_tags component_tags %}
+{% blocktranslate asvar title with cold_room_name=cold_room.name %}Cold Room - {{ cold_room_name }} - Detail{% endblocktranslate %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style>
+    #badge-alarms {
+        padding: 10px;
+    }
+
+    #badge-alarms .badge {
+        font-weight: bold;
+        font-size: .8rem;
+        padding: .2rem .4rem;
+        position: relative;
+        top: -10px;
+        right: 10px;
+    }
+
+    .header>* {
+        margin-right: 10px;
+    }
+
+    .column {
+        margin: 0px 15px;
+        padding: 0px 2px;
+        position: relative;
+    }
+
+    .c-main {
+        margin-top: -20px;
+    }
+
+    .col-sm-1 {
+        margin-left: 4px;
+    }
+
+    @keyframes green-glowing {
+        0% {
+            fill: #2ba805;
+            -webkit-filter: drop-shadow( 1px 1px 1px #2ba805);
+            filter: drop-shadow( 1px 1px 1px #2ba805);
+        }
+        50% {
+            fill: #49e819;
+            -webkit-filter: drop-shadow( 1px 1px 3px #49e819);
+            filter: drop-shadow( 1px 1px 3px #49e819);
+        }
+        100% {
+            fill: #2ba805;
+            -webkit-filter: drop-shadow( 1px 1px 1px #2ba805);
+            filter: drop-shadow( 1px 1px 1px #2ba805);
+        }
+    }
+    .glow-active {
+        animation: green-glowing 1300ms infinite;
+    }
+
+    @keyframes opacity-glowing {
+        0% {
+            opacity: 1.0;
+        }
+        50% {
+            opacity: 0.6;
+        }
+        100% {
+            opacity: 1.0;
+        }
+    }
+    .fade-opacity {
+        animation: opacity-animation 2000ms infinite;
+    }
+
+    @keyframes opacity-animation {
+        0% {
+            opacity: 1.0;
+        }
+        50% {
+            opacity: 0.6;
+        }
+        100% {
+            opacity: 1.0;
+        }
+    }
+    .glow-opacity {
+        animation: opacity-glowing 2000ms infinite;
+    }
+</style>
+{% endblock stylesheets %}
+
+{% block header %}
+{{ block.super }}
+<div class="c-subheader px-3">
+    <div class="c-subheader-nav d-md-down-none mfe-2">
+        {% for link in links %}
+        <a class="c-subheader-nav-link" href="{{ link.url }}">{{ link.name }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock header %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <div class="row">
+        <div class="col-sm-12" style="display: inline-flex;">
+            <h3>
+                {{ cold_room.name }}
+                <small><span class="status badge"></span></small>
+            </h3>
+            <div class="row" style="margin-left: 10px; margin-top: 5px;">
+                <div class="col-sm-1">
+                    <a role="button" class="btn btn-sm btn-outline-secondary"
+                        href="{% url 'cold_room_params' cold_room.id %}">
+                        <i class="fa fa-cogs"></i>
+                    </a>
+                </div>
+                <div class="col-sm-1">
+                    <a role="button" class="btn btn-sm btn-outline-secondary"
+                        href="{% url 'historical:cold_room_data' cold_room.id %}">
+                        <i class="fa fa-line-chart"></i>
+                    </a>
+                </div>
+                <!--
+                <div class="col-sm-1">
+                    <a role="button" class="btn btn-sm btn-outline-secondary"
+                        href="{% url 'cold_room_params' cold_room.id %}">
+                        <i class="fa fa-bell">
+                            <span class="badge badge-pill badge-danger"></span>
+                        </i>
+                    </a>
+                </div>
+                -->
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <div id="measurements" class="row" style="margin-bottom: -15px;">
+        {% measurement_items cold_room as items %}
+        {% for measurement in items %}
+            <div class="col-sm-6 col-lg-3">
+                {% show_card measurement %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <hr />
+
+    <div class="row">
+        <div class="col-sm-7">
+            <div id="synoptic" class="row">
+            {% include "cold_room/synoptic.svg" %}
+            </div>
+            {% alarms_table cold_room.id %}
+        </div>
+        {% if perms.cold_rooms.can_edit_cold_room_control_options %}
+        <div class="col-sm-5" style="margin-top: 8px;">
+            {% include "cold_room/commands.html" %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+{{ block.super }}
+{% static_script 'assets/vendors/@coreui/chartjs/js/coreui-chartjs.bundle.js' %}
+{% static_script 'assets/vendors/@coreui/utils/js/coreui-utils.js' %}
+
+<script type="module">
+    import '/static/d3.v6.min.js'
+    import { flatten, getColumns } from "{% static 'comms/js/jsobject.js' %}";
+    import { ws } from "{% static 'comms/js/wsockets.js' %}";
+    import { CircularBuffer } from "{% static 'comms/js/buffers.js' %}";
+    import { getActiveAlarms } from "{% static 'comms/js/alarms.js' %}";
+    import { Sparkline, N_SAMPLES } from "{% static 'js/sparkline.js' %}";
+    import { updateSynoptic } from "{% static 'js/synoptic.js' %}";
+
+    const coldRoomId = +"{{ cold_room.id }}";
+    const options = {
+        enable_selector: JSON.parse("{{ cold_room.enable_selector|lower }}"),
+    };
+
+    const clamp = (min, max) => d => Math.min(max, Math.max(min, d));
+    const charts  = {};
+    const buffers = {};
+
+    const fields = JSON.parse(document.getElementById('fields').textContent);
+    d3.selectAll('.chart').each((_, i, nodes) => {
+        const canvas = nodes[i];
+        const source = nodes[i].dataset.src;
+        buffers[source] = new CircularBuffer(N_SAMPLES);
+        charts[source] = new Sparkline(canvas);
+    });
+
+    function wsMessageHandler(event) {
+        if (event.type !== "message") return;
+        const json = { ...JSON.parse(event.data), fields };
+        const data = json.structs.filter(d => d.cold_room === coldRoomId)[0];
+
+        updateSynoptic(data, options);
+        updateMeasurements(data);
+        updateWorkingMode(data);
+        updateBuffers(data);
+        for (const key in charts) {
+            charts[key].update(buffers[key]);
+        }
+    }
+
+    function updateBuffers(data) {
+        for (const key in buffers) {
+            buffers[key].push(data[key]);
+        }
+    }
+
+    function updateWorkingMode(data) {
+        const conservation = data['workingMode'];
+        const degreening   = !conservation;
+
+        d3.select('.status')
+            .classed('bg-gradient-dark', false)
+            .classed('badge-warning', degreening)
+            .classed('badge-info', conservation)
+            .text(conservation ? '{% trans "Conservation"|upper %}' : '{% trans "Degreening"|upper %}');
+    }
+
+    // TODO: DRY index.html (updateMeasurements, clamp, sparkline...)
+    function updateMeasurements(data) {
+        const measurements = d3.select("#measurements");
+        if (!measurements) return;
+
+        measurements.selectAll(".measurement").each((_, i, nodes) => {
+            const propName = nodes[i].dataset.src;
+            // Non-negative values for measurements, except temperature related ones
+            const clamped = !propName.toLowerCase().includes("temperature");
+            const value = clamped
+                ? clamp(0, Number.MAX_VALUE)(data[propName])
+                : data[propName];
+
+            const span = d3.select(nodes[i]).select("span");
+            const fmt = span.node().dataset.format || ".1f";
+            const floatFmt = d3.format(fmt);
+            span.text(floatFmt(value));
+            measurements.select('.loading').remove();
+        });
+    }
+
+    ws.subscribe(wsMessageHandler);
+</script>
+{% endblock javascripts %}

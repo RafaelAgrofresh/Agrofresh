@@ -1,0 +1,334 @@
+{% load i18n component_tags static belongs_to %}
+
+<header class="c-header c-header-light c-header-fixed">
+
+    <!-- Menu button minimized hamburguer -->
+    <button class="c-header-toggler c-class-toggler d-lg-none mfe-auto" type="button" data-target="#sidebar"
+        data-class="c-sidebar-show">
+        <svg class="c-icon c-icon-lg">
+            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-menu"></use>
+        </svg>
+    </button>
+
+    <a class="c-header-brand d-lg-none" href="#">
+        <img src="/static/assets/brand/agrofresh-logo.png" height="46" alt="Agrofresh Logo">
+    </a>
+    <button class="c-header-toggler c-class-toggler mfs-3 d-md-down-none" type="button" data-target="#sidebar"
+        data-class="c-sidebar-lg-show" responsive="true">
+        <svg class="c-icon c-icon-lg">
+            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-menu"></use>
+        </svg>
+    </button>
+
+    <!-- Menu header -->
+    <ul class="c-header-nav d-md-down-none">
+        {% navigation_items as items %}
+        {% for item in items %}
+        <li class="c-header-nav-item px-3">
+            <a class="c-header-nav-link {% if not item.enabled %}not-active{% endif %}" href="{{ item.url }}">
+                {{ item.label }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <ul class="c-header-nav ml-auto"></ul>
+
+    <!-- Right Toolbar -->
+    <ul class="c-header-nav">
+        <li class="c-header-nav-item dropdown mx-2" id="navigation-comms-status">
+            <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button">
+                <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-lan"></use>
+                </svg>
+                <span class="badge badge-pill badge-danger"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg pt-0">
+                <div class="dropdown-header bg-light">
+                    <strong>{% trans "Comms status" %}</strong>
+                </div>
+                <div class="status-list"></div>
+            </div>
+        </li>
+
+        <li class="c-header-nav-item dropdown mx-2" id="navigation-badge-alarms">
+            <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button">
+                <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-bell"></use>
+                </svg>
+                <span class="badge badge-pill badge-danger"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg pt-0">
+                <div class="dropdown-header bg-light">
+                    <strong>{% trans "Active Alarms" %}</strong>
+                </div>
+                <div class="alarms-list" style="overflow-y: scroll; max-height: 350px;"></div>
+                {% if perms.comms.can_acknowledge_alarms %}
+                <div class="dropdown-item border-top btn btn-clear-alarm">
+                    <strong>{% trans "Clear Alarms" %}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </li>
+
+        <li class="c-header-nav-item dropdown mfe-md-3">
+            <a class="c-header-nav-link" data-toggle="dropdown" href="#" role="button">
+                <svg class="c-icon">
+                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-user"></use>
+                </svg>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right pt-0">
+                <div class="dropdown-header bg-light py-2">
+                    <strong>{% trans "Settings" %}</strong>
+                </div>
+
+                {% if perms.is_staff %}
+                <a class="dropdown-item" href="{% url 'admin:index' %}">
+                    <i class="fa fa-cogs mr-2" aria-hidden="true"></i>
+                    {% trans "Admin" %}
+                </a>
+                {% endif %}
+
+                {% if perms.is_staff or request.user|belongs_to:'Nivel3' %}
+                <a class="dropdown-item" href="{% url 'create_user' %}">
+                    <i class="fa fa-user-plus mr-2" aria-hidden="true"></i>
+                    {% trans "Add user" %}
+                </a>
+                {% endif %}
+
+                {% if perms.comms.can_view_comms_data %}
+                <a class="dropdown-item" href="{% url 'comms:index' %}">
+                    <i class="fa fa-plug mr-2" aria-hidden="true"></i>
+                    {% trans "Comms" %}
+                </a>
+                {% endif %}
+
+                <div class="dropdown-divider"></div>
+                <p class="dropdown-header bg-light py-2">{% trans "user:" %} {{ request.user.username }}</p>
+                <a class="dropdown-item" href="{% url 'logout' %}">
+                    <i class="fa fa-sign-out mr-2" aria-hidden="true"></i>
+                    {% trans "Logout" %}</a>
+                <div class="dropdown-divider"></div>
+                <p class="dropdown-header bg-light py-2">{% trans "Select Language" %}</p>
+                <form class="dropdown-item" action="{% url 'set_language' %}" method="post">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ redirect_to }}">
+                    <select name="language" class="form-control" onchange='this.form.submit()'>
+                        {% get_current_language as LANGUAGE_CODE %}
+                        {% get_available_languages as LANGUAGES %}
+                        {% get_language_info_list for LANGUAGES as languages %}
+                        {% for language in languages %}
+                        <option value="{{ language.code }}" {% if language.code == LANGUAGE_CODE %} selected{% endif %}>
+                            {{ language.name_local|title }} ({{ language.code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </li>
+    </ul>
+</header>
+
+{% block javascript %}
+<script type="module">
+    import '/static/d3.v6.min.js'
+    import { ws } from "{% static 'comms/js/wsockets.js' %}";
+    import { getActiveAlarms } from "{% static 'comms/js/alarms.js' %}";
+    import { notifyDialog, confirmDialog } from "{% static 'js/modal.js' %}";
+    import { Writer } from "{% static 'comms/js/writer.js' %}";
+
+    const writer = new Writer("{% url 'comms:write' %}", "{{ csrf_token }}");
+    const fields = JSON.parse(document.getElementById('fields').textContent);
+    const settings = JSON.parse(document.getElementById('settings').textContent);
+    const unacknowledged = settings.show_unack_alarms;
+
+    const clearButton = d3
+        .select('#navigation-badge-alarms .btn-clear-alarm')
+        .on('click', _ => {
+            // TODO dry duplicated code
+            d3.json("{% url 'comms:ack_alarms' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({
+                    // cold_room: null,
+                })
+            })
+            // .then(d => JSON.stringify(d.data))
+            .then(d => `ack_alarms[cold_room_pk=${d.data.cold_room}]`)
+            .then(d => console.log(d));
+        });
+
+    let wsStatus = {};
+    let crStatus = [];
+
+    function wsMessageHandler(event) {
+        if (event.type === "status") {
+            wsStatus = { ...event, src: "WebSocket" };
+            d3.select("#navigation-comms-status")
+                .call(updateStatusView, [wsStatus, ...crStatus]);
+            return;
+        }
+        if (event.type !== "message") return;
+
+        const json = JSON.parse(event.data);
+        const data = { ...json, fields };
+
+        const activeAlarms = getActiveAlarms(data, { unacknowledged });
+        clearButton.classed('disabled', activeAlarms.length == 0);
+        d3.select("#navigation-badge-alarms").call(div => {
+            div.select("span.badge")
+                .style("visibility", activeAlarms.length > 0 ? "visible": "hidden")
+                .text(d => activeAlarms.length);
+
+            div.select(".dropdown-header strong")
+                .text(d => `${activeAlarms.length} {% trans 'Active Alarms' %}`)
+
+            div.select(".alarms-list")
+                .call(updateActiveAlarmsList, activeAlarms);
+        });
+
+        crStatus = data.structs.map(s => ({
+            type: 'status',
+            value: !s.error ? 'connected' : 'error',
+            desc: !s.error ? 'Connected' : s.error,
+            src: `Cold Room ${s.cold_room}`,
+        }));
+        d3.select("#navigation-comms-status")
+            .call(updateStatusView, [wsStatus, ...crStatus]);
+
+        showMessages(json.messages);
+    }
+
+    let popup = false;
+    function showMessages(messages) {
+        if (popup || !messages.length) return;
+
+        popup = true;
+        const message = messages[0];
+        const accept_msg = async () => {
+            const result = await d3.json("{% url 'comms:accept_message' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                body: JSON.stringify({
+                    cold_room: message.src.id,
+                    msg_id: message.id,
+                })
+            })
+            // console.log(result);
+            popup = false;
+        };
+
+        if (message.cls === "notify") {
+            return notifyDialog(
+                "{% trans 'Notify' %}",
+                `${message.src.name} - ${message.msg}`,
+                "{% trans 'Accept' %}", accept_msg);
+        }
+
+        if (message.cls === "confirm") {
+            return confirmDialog(
+                "{% trans 'Confirm' %}",
+                `${message.src.name} - ${message.msg}`,
+                "{% trans 'Yes' %}", "{% trans 'No' %}", async confirm => {
+                    const writes = confirm ? message.yes : message.no;
+                    const cold_room = message.src.id;
+                    await writer.write(cold_room, writes);
+                    await accept_msg();
+                });
+        }
+    }
+
+    function updateStatusView(div, data) {
+        // window['commsStatus'] = data;
+        const commsErrors = data.filter(x => x.value === "error");
+
+        div.select("span.badge")
+            .style("visibility", commsErrors.length > 0 ? "visible": "hidden")
+            .text(d => commsErrors.length);
+
+        const items = div.select(".dropdown-menu .status-list")
+            .selectAll(".dropdown-item").data(data).join("a").classed("dropdown-item", true)
+                .attr("href", "#");
+                // .text(d => JSON.stringify(d));
+
+        items.selectAll("svg").data(d => [d]).join("svg")
+            .classed("c-icon mfe-2", true)
+            .classed("text-danger", d => d.value === "error")
+            .classed("text-success", d => d.value === "connected")
+            .selectAll("use").data(d => [d]).join("use")
+                .attr("xlink:href", d => d.value === "error"
+                    ? "/static/assets/vendors/@coreui/icons/svg/free.svg#cil-warning"
+                    : "/static/assets/vendors/@coreui/icons/svg/free.svg#cil-transfer"
+                );
+
+        items.selectAll(".item-desc").data(d => [d]).join("span").classed("item-desc", true)
+            .text(d => d.src);
+
+        items.selectAll(".badge").data(d => [d]).join("span").classed("badge mfs-auto", true)
+            .classed("badge-danger", d => d.value === "error")
+            .classed("badge-success", d => d.value === "connected")
+            .text(d => d.value === "error" ? "error" : "ok");
+    }
+
+    function updateActiveAlarmsList(div, data) {
+        const timeParser = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+        const timeFormat = d3.timeFormat("%c");
+        const timeFmt = dt => dt ? timeFormat(timeParser(dt)) : '';
+
+        const getStatus = d => [
+                `{% trans 'Status' %}: ${"{% trans 'Active' %}"}`,
+                `{% trans 'Start'  %}: ${timeFmt(d.ts)}`,
+                (!d.active ? `{% trans 'End'    %}: ${timeFmt(d.ts_end)}` : '')
+            ].filter(d => d).join(' | ');
+
+        const item = div
+            .selectAll(".dropdown-item").data(data).join("a").classed("dropdown-item", true)
+                .attr("href", "#");
+
+        const message = item
+            .selectAll(".message").data(d => [d]).join("div").classed("message", true);
+
+        const row = message
+            .selectAll("div").data(d => [d]).join("div")
+                .classed("py-3 mfe-3 float-left", true)
+
+        const avatar = row
+            .selectAll(".c-avatar").data(d => [d]).join("div").classed("c-avatar", true);
+
+        avatar
+            .selectAll("svg").data(d => [d]).join("svg").classed("c-icon c-icon-2xl", true)
+            .selectAll("use").data(d => [d]).join("use")
+                .attr("xlink:href", "/static/assets/vendors/@coreui/icons/svg/free.svg#cil-warning");
+
+        avatar
+            .selectAll(".c-avatar-status").data(d => [d]).join("span").classed("c-avatar-status", true)
+                .classed(" bg-secondary", d => !d.active)
+                .classed("bg-warning", d => d.active);
+
+        const header = message
+            .selectAll(".header").data(d => [d]).join("div").classed("header", true)
+
+        header.selectAll(".source").data(d => [d]).join("small").classed("source", true)
+            .classed("text-muted", true)
+            .text(d => `Cold Room ${d.cold_room}`);
+
+        header.selectAll(".timestamp").data(d => [d]).join("small").classed("timestamp", true)
+            .classed("text-muted float-right mt-1", true)
+            .text(d => timeFmt(d.ts));
+
+        const content = message
+            .selectAll(".content").data(d => [d]).join("div").classed("content", true)
+
+        message.selectAll(".exclamation").data(d => [d]).join("div").classed("exclamation", true)
+            .classed("text-truncate font-weight-bold", true)
+            .html(d => `<span class="text-danger">!!!</span> ${d.desc}`);
+
+        message.selectAll(".description").data(d => [d]).join("div").classed("description", true)
+            .classed("small text-muted text-truncate", true)
+            .attr("title", getStatus)
+            .text(getStatus);
+    }
+
+    ws.subscribe(wsMessageHandler);
+</script>
+{% endblock javascript %}

@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+{% load i18n crispy_forms_tags custom_filters %}
+{% trans "Cold Rooms - Events Log" as title %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="fade-in">
+        <div class="card">
+            <div class="card-header">
+                <a class="btn fa fa-download float-right" href="{% url 'historical:events_csv' %}"
+                    title="{% trans 'Download CSV' %}"
+                    target="_blank"></a>
+                <a class="btn" data-toggle="collapse" data-target="#optionToggler"
+                    aria-controls="optionToggler" aria-expanded="false" aria-label="Toggle filter options">
+                    <i class="fa fa-filter"></i>
+                    {% trans "Filter options" %}
+                </a>
+                <div class="collapse" id="optionToggler">
+                    {% crispy form %}
+                </div>
+            </div>
+
+            <div class="card-body">
+                <table class="table table-sm table-striped table-vcenter text-nowrap"
+                    style="margin-bottom: 0px;">
+                <thead>
+                    <tr>
+                        <th>{% trans "Date / Time" %}</th>
+                        <th>{% trans "Type" %}</th>
+                        <th>{% trans "Description" %}</th>
+                        <th>{% trans "Value" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td>{{ event.ts }}</td>
+                        <td>{{ event.type|event_type }}</td>
+                        <td>{{ event.description }}</td>
+                        <td>{{ event.value|event_value }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if is_paginated %}
+            <div class="card-footer">
+                {% include '_pagination.html' with page_obj=page_obj base_url=base_url %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

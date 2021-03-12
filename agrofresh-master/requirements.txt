@@ -1,0 +1,14 @@
+django
+django-admin-sortable2
+django-crispy-forms
+django-debug-toolbar
+psycopg2
+pymodbus
+python-decouple
+python-dateutil
+pandas
+plotly
+uvicorn
+websockets
+whitenoise
+rx
