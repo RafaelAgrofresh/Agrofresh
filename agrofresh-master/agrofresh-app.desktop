@@ -1,5 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Inicio automático de web app de Agrofresh
-Comment=Inicial el navegador (en modo kiosk) apuntando a la web app de Agrofresh
-Exec=chromium-browser --start-maximized --kiosk "http://127.0.0.1:8000/cold_rooms"

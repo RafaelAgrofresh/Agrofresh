@@ -1,5 +1,0 @@
-env
-.git
-*.img
-*.tar.gz
-*.sqlite3
